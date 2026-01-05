@@ -1,4 +1,5 @@
-## Hi there 👋
+### Hi there 👋
+I'm Barry. Check out my personal portfolio website: [barrys27.github.io](https://barrys27.github.io)
 
 <!--
 **BarryS27/BarryS27** is a ✨ _special_ ✨ repository because its `README.md` (this file) appears on your GitHub profile.
