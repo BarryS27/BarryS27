@@ -5,9 +5,6 @@
 
 [![Python](https://img.shields.io/badge/Python-3776AB?style=for-the-badge&logo=python&logoColor=white)](https://www.python.org/)
 [![Data Science](https://img.shields.io/badge/Data_Science-2E8B57?style=for-the-badge&logo=jupyter&logoColor=white)](https://github.com/BarryS27)
-[![Marketing](https://img.shields.io/badge/HubSpot-FF7A59?style=for-the-badge&logo=hubspot&logoColor=white)](https://www.hubspot.com/)
-
-*"Data speaks, stories bridge, future waits."* *(My 6-word story for Literature & Composition 1)*
 
 </div>
 
