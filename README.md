@@ -1,25 +1,22 @@
-### 🧠 My Neural Network
-```mermaid
-graph TD
-    user((Barry S.))
-    
-    subgraph "Input Layer: Learning"
-        A[Inbound Marketing] -->|Strategy| user
-        B[Lexington HS] -->|Academics| user
-        C[Python & Data] -->|Skills| user
-    end
-    
-    subgraph "Hidden Layer: Processing"
-        user -->|Analysis| D{Projects}
-        D -->|Dev| E[Student Mgmt System]
-        D -->|Research| F[Teen Investment]
-    end
-    
-    subgraph "Output Layer: Goals"
-        E --> G(Open Source Contributor)
-        F --> H(Data Driven Marketer)
-    end
-    
-    style user fill:#f9f,stroke:#333,stroke-width:4px
-    style D fill:#bbf,stroke:#333,stroke-width:2px
-```
+# <kbd>Barry S.</kbd>
+
+> <kbd>Ctrl</kbd> + <kbd>F</kbd> "Data Science"
+
+<br>
+
+| <kbd>Esc</kbd> Status | <kbd>Tab</kbd> Focus | <kbd>Enter</kbd> Stack |
+| :--- | :--- | :--- |
+| Student (9th) | Marketing | Python |
+| Lexington, MA | Research | HTML / CSS |
+
+<br>
+
+### <kbd>Shift</kbd> + Current_Work
+* <kbd>1</kbd> [Student Management System](https://github.com/BarryS27/Student-Academic-Management-System)
+* <kbd>2</kbd> [Teen Investment Research](https://github.com/BarryS27/Teen-Investment-Research)
+
+<br>
+
+<div align="right">
+  <kbd>✉️ Email Me</kbd>
+</div>
