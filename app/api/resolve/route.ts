@@ -1,7 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 
 function isYouTubeURL(url: string): boolean {
-  return /(?:youtube\.com\/(?:watch|shorts|embed)|youtu\.be\/)/.test(url);
+  // FIX: added music.youtube.com — YouTube Music links were falling through to
+  // the HEAD probe which returned HTML (not audio), producing an unhelpful error.
+  return /(?:(?:music\.)?youtube\.com\/(?:watch|shorts|embed)|youtu\.be\/)/.test(url);
 }
 function isDirectAudioURL(url: string): boolean {
   return /\.(mp3|flac|wav|m4a|ogg|aac|opus)(\?.*)?$/i.test(url);
@@ -138,6 +140,24 @@ export async function GET(request: NextRequest) {
   }
 
   // ── Unknown URL — HEAD probe ───────────────────────────────────────────────
+  // FIX: SSRF protection — block requests to private/loopback ranges before
+  // ever opening a connection. Without this, an attacker could probe Vercel's
+  // internal network (e.g. AWS metadata at 169.254.169.254, private subnets).
+  try {
+    const urlObj = new URL(url);
+    const hostname = urlObj.hostname;
+    // Reject non-http(s) schemes, localhost, and RFC-1918 / link-local ranges
+    if (!/^https?:$/.test(urlObj.protocol)) {
+      return NextResponse.json({ error: 'Only http and https URLs are supported.' }, { status: 400 });
+    }
+    const privatePattern = /^(localhost|127\.|10\.|172\.(1[6-9]|2\d|3[01])\.|192\.168\.|169\.254\.|::1$|\[::1\])/i;
+    if (privatePattern.test(hostname)) {
+      return NextResponse.json({ error: 'Private or loopback addresses are not allowed.' }, { status: 400 });
+    }
+  } catch {
+    return NextResponse.json({ error: 'Invalid URL.' }, { status: 400 });
+  }
+
   try {
     // FIX 1: added User-Agent — some CDN / media servers reject headless requests
     //         with 403/404 even for publicly accessible files.
