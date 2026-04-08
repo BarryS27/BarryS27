@@ -1,0 +1,398 @@
+.player {
+  position: relative;
+  width: 100%;
+  max-width: 460px;
+  /* FIX: backdrop-filter is unsupported in Firefox < 103 and some other browsers.
+     Without a fallback the glass panel is fully transparent, making text unreadable.
+     The @supports block below overrides with the blur when available; the base
+     rule uses a solid semi-opaque background that works everywhere. */
+  background: rgba(10, 12, 20, 0.92);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--glass-shadow);
+  overflow: hidden;
+  animation: slideUp 0.5s var(--ease-out-expo) both;
+}
+
+@supports (backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px)) {
+  .player {
+    background: rgba(10, 12, 20, 0.55);
+    backdrop-filter: blur(var(--glass-blur)) saturate(1.4);
+    -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(1.4);
+  }
+}
+
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(24px) scale(0.98); }
+  to   { opacity: 1; transform: translateY(0)    scale(1); }
+}
+
+/* Cover art blur backdrop */
+.coverBlur {
+  position: absolute;
+  inset: 0;
+  background-size: cover;
+  background-position: center;
+  filter: blur(40px) saturate(1.6);
+  opacity: 0.12;
+  transform: scale(1.1);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.inner {
+  position: relative;
+  z-index: 1;
+  padding: 24px 24px 20px;
+  display: grid;
+  grid-template-columns: 52px 1fr;
+  grid-template-rows: auto auto auto auto auto auto;
+  gap: 0 16px;
+  align-items: start;
+}
+
+/* ── Cover ── */
+.cover {
+  grid-column: 1;
+  grid-row: 1 / 3;
+  align-self: center;
+  width: 52px;
+  height: 52px;
+  border-radius: 8px;
+  overflow: hidden;
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.coverImg {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.coverPlaceholder {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-secondary);
+}
+.coverPlaceholder svg { width: 32px; height: 32px; }
+
+/* ── Meta ── */
+.meta {
+  grid-column: 2;
+  grid-row: 1;
+  min-width: 0;
+  padding-top: 2px;
+  /* leave right space for close button */
+  padding-right: 32px;
+}
+
+.title {
+  font-family: var(--font-display);
+  font-size: 1.15rem;
+  font-weight: 400;
+  letter-spacing: 0.01em;
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.artist {
+  font-family: var(--font-ui);
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  margin-top: 3px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ── Transport controls row: [skip-prev] [play] [skip-next] ... [queue] ── */
+.transport {
+  grid-column: 1 / 3;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  margin-top: 16px;
+}
+
+/* Skip prev / next */
+.skipBtn {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: transparent;
+  border: 1px solid transparent;
+  color: var(--text-secondary);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: color 0.2s, background 0.2s, border-color 0.2s;
+}
+.skipBtn svg { width: 16px; height: 16px; }
+.skipBtn:hover:not(:disabled) {
+  color: var(--text-primary);
+  background: var(--glass-bg);
+  border-color: var(--glass-border);
+}
+.skipBtn:disabled {
+  opacity: 0.25;
+  cursor: default;
+}
+/* FIX: keyboard focus was invisible on skip buttons */
+.skipBtn:focus-visible {
+  outline: 2px solid var(--col-teal);
+  outline-offset: 3px;
+}
+
+/* Play / pause */
+.playBtn {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: rgba(15, 248, 224, 0.12);
+  border: 1px solid rgba(15, 248, 224, 0.25);
+  color: var(--col-teal);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.2s, transform 0.15s, box-shadow 0.2s;
+}
+.playBtn:hover {
+  background: rgba(15, 248, 224, 0.22);
+  box-shadow: 0 0 20px rgba(15, 248, 224, 0.3);
+  transform: scale(1.06);
+}
+.playBtn:active { transform: scale(0.96); }
+/* FIX: keyboard focus was invisible on play/pause button */
+.playBtn:focus-visible {
+  outline: 2px solid var(--col-teal);
+  outline-offset: 3px;
+}
+.playBtn svg { width: 18px; height: 18px; }
+.playBtn.loading { opacity: 0.7; pointer-events: none; }
+
+.spinner { animation: spin 1s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* Queue button */
+.queueBtn {
+  position: relative;
+  margin-left: auto;
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  background: transparent;
+  border: 1px solid transparent;
+  color: var(--text-secondary);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: color 0.2s, background 0.2s, border-color 0.2s;
+}
+.queueBtn svg { width: 14px; height: 14px; }
+.queueBtn:hover {
+  color: var(--text-primary);
+  background: var(--glass-bg);
+  border-color: var(--glass-border);
+}
+/* FIX: keyboard focus was invisible on queue toggle button */
+.queueBtn:focus-visible {
+  outline: 2px solid var(--col-teal);
+  outline-offset: 3px;
+}
+
+.queueBadge {
+  position: absolute;
+  top: -5px;
+  right: -5px;
+  min-width: 14px;
+  height: 14px;
+  padding: 0 3px;
+  border-radius: 7px;
+  background: var(--col-teal);
+  color: var(--col-bg);
+  font-family: var(--font-ui);
+  font-size: 9px;
+  font-weight: 700;
+  line-height: 14px;
+  text-align: center;
+  pointer-events: none;
+}
+
+/* ── Time row ── */
+.timeRow {
+  grid-column: 1 / 3;
+  display: flex;
+  justify-content: space-between;
+  margin-top: 14px;
+}
+
+.time {
+  font-family: var(--font-ui);
+  font-size: 0.68rem;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-secondary);
+  letter-spacing: 0.04em;
+}
+
+/* ── Seek bar ── */
+.seekTrack {
+  grid-column: 1 / 3;
+  position: relative;
+  height: 2px;
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 1px;
+  margin-top: 6px;
+  cursor: pointer;
+  transition: height 0.2s;
+}
+.seekTrack:hover { height: 4px; }
+/* FIX: seek bar was interactive during isLoading — seeking before canplay fires
+   causes the audio element to snap currentTime back to 0 when the buffer arrives */
+.seekDisabled {
+  pointer-events: none;
+  opacity: 0.4;
+  cursor: default;
+}
+/* FIX: keyboard focus was invisible on the seek slider */
+.seekTrack:focus-visible {
+  outline: 2px solid var(--col-teal);
+  outline-offset: 3px;
+  border-radius: 2px;
+}
+
+.seekFill {
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  background: linear-gradient(90deg, var(--col-teal), var(--col-violet));
+  border-radius: 1px;
+  pointer-events: none;
+  transition: width 0.1s linear;
+}
+
+.seekThumb {
+  position: absolute;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--col-teal);
+  box-shadow: 0 0 6px var(--col-teal);
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+.seekTrack:hover .seekThumb { opacity: 1; }
+/* FIX: keep thumb visible while actively dragging — without this, moving the
+   pointer off the track element during a drag made the thumb disappear even
+   though pointer capture kept the drag active. */
+.seekTrack:active .seekThumb { opacity: 1; }
+
+/* ── Volume ── */
+.volumeRow {
+  grid-column: 1 / 3;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 14px;
+}
+
+.volIcon {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+  color: var(--text-secondary);
+}
+
+.volSlider {
+  -webkit-appearance: none;
+  appearance: none;
+  flex: 1;
+  height: 2px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 1px;
+  outline: none;
+  cursor: pointer;
+}
+.volSlider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.6);
+  cursor: pointer;
+  transition: background 0.2s, transform 0.15s;
+}
+.volSlider::-webkit-slider-thumb:hover {
+  background: var(--col-teal);
+  transform: scale(1.3);
+}
+/* FIX: Firefox uses ::-moz-range-thumb — omitting it left the slider unstyled on Firefox */
+.volSlider::-moz-range-thumb {
+  width: 10px;
+  height: 10px;
+  border: none;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.6);
+  cursor: pointer;
+  transition: background 0.2s, transform 0.15s;
+}
+.volSlider::-moz-range-thumb:hover {
+  background: var(--col-teal);
+}
+
+/* ── Close button ── */
+.closeBtn {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  z-index: 2;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  color: var(--text-secondary);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: color 0.2s, background 0.2s;
+}
+.closeBtn:hover {
+  color: var(--text-primary);
+  background: rgba(255, 255, 255, 0.1);
+}
+/* FIX: keyboard focus was invisible — added :focus-visible outline */
+.closeBtn:focus-visible {
+  outline: 2px solid var(--col-teal);
+  outline-offset: 2px;
+}
+.closeBtn svg { width: 12px; height: 12px; }
+
+/* ── Responsive ── */
+/* FIX: on very narrow screens (< 400px) the player card had no horizontal
+   breathing room — it pressed flush against the viewport edges. */
+@media (max-width: 480px) {
+  .player {
+    border-radius: var(--radius-md);
+  }
+  .inner {
+    padding: 16px 16px 14px;
+    gap: 0 12px;
+  }
+}
