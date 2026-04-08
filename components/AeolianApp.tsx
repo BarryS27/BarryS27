@@ -95,20 +95,19 @@ export default function AeolianApp() {
   }, [state.error, track]);
 
   // ── YouTube stream-expiry auto-recovery ───────────────────────────────────
-  // FIX: YouTube direct URLs expire after ~6 h.  When the audio element fires
-  // an error on a youtube source, we silently re-resolve a fresh stream URL
-  // using the originalUrl stored in the track, then resume without UI reset.
-  // A single retry guard prevents infinite loops on genuine errors.
   useEffect(() => {
     if (!state.errorCode || !track?.originalUrl || track.source !== 'youtube') return;
-    if (ytRetryRef.current) return; // already tried once for this track
-    if (state.errorCode !== 2 && state.errorCode !== 4) return; // not a network/src error
+    if (ytRetryRef.current) return;
+    if (state.errorCode !== 2 && state.errorCode !== 4) return;
 
     ytRetryRef.current = true;
     setPhase('resolving');
     setStatusMsg('Stream expired — refreshing…');
 
-    fetch(`/api/resolve?url=${encodeURIComponent(track.originalUrl)}`)
+    // FIX: AbortController cancels the fetch if the component unmounts before
+    // it resolves — previously setState/updateStreamUrl were called on a dead component.
+    const controller = new AbortController();
+    fetch(`/api/resolve?url=${encodeURIComponent(track.originalUrl)}`, { signal: controller.signal })
       .then((r) => r.json())
       .then((data) => {
         if (data.url) {
@@ -119,10 +118,12 @@ export default function AeolianApp() {
           setStatusMsg(data.error ?? 'Stream refresh failed.');
         }
       })
-      .catch(() => {
+      .catch((err) => {
+        if (err?.name === 'AbortError') return;
         setPhase('error');
         setStatusMsg('Network error while refreshing stream.');
       });
+    return () => controller.abort();
   }, [state.errorCode, track, updateStreamUrl]);
 
   // ── Helpers ───────────────────────────────────────────────────────────────
@@ -246,7 +247,14 @@ export default function AeolianApp() {
     async (rawUrl: string) => {
       let url: URL;
       try { url = new URL(rawUrl); }
-      catch { return; }
+      catch {
+        // FIX: previously silently returned — user had no idea their paste failed.
+        // Only show the error when this was triggered by an explicit user action
+        // (not the global paste handler which may fire on non-URL pastes).
+        setPhase('error');
+        setStatusMsg('Invalid URL — please paste a valid http/https link.');
+        return;
+      }
 
       revokeObjUrl();
       setPhase('resolving');
@@ -469,7 +477,7 @@ export default function AeolianApp() {
 
         {/* Resolving spinner */}
         {isResolve && (
-          <div className={styles.status}>
+          <div className={styles.status} role="status" aria-live="polite">
             <div className={styles.resolveSpinner} aria-hidden="true" />
             <span>{statusMsg}</span>
           </div>
@@ -477,7 +485,7 @@ export default function AeolianApp() {
 
         {/* Error */}
         {isError && (
-          <div className={styles.errorBox}>
+          <div className={styles.errorBox} role="alert" aria-live="assertive">
             <svg className={styles.errorIcon} viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
               <circle cx="10" cy="10" r="8.5" stroke="currentColor" strokeWidth="1" />
               <path d="M10 6v5M10 13.5v.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />

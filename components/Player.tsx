@@ -1,5 +1,5 @@
 'use client';
-import { useCallback, useRef } from 'react';
+import React, { useCallback, useRef } from 'react';
 import type { Track, AudioState } from '@/hooks/useAudio';
 import styles from './Player.module.css';
 
@@ -28,13 +28,17 @@ export default function Player({
 }: PlayerProps) {
   const { isPlaying, currentTime, duration, volume, isLoading } = state;
 
-  const fmt = (s: number) => {
+  // FIX: fmt() now accepts the total duration so both currentTime and duration
+  // use the same format. If the track is >= 1 hour, both show h:mm:ss (so
+  // "2:22" and "1:02:10" no longer appear side-by-side for the same track).
+  const fmt = (s: number, totalDuration = duration) => {
     if (!isFinite(s)) return '–:––';
-    // FIX: original code showed '75:30' for a 75-minute track instead of '1:15:30'
+    const useHours = isFinite(totalDuration) && totalDuration >= 3600;
     const h   = Math.floor(s / 3600);
     const m   = Math.floor((s % 3600) / 60);
     const sec = Math.floor(s % 60).toString().padStart(2, '0');
-    return h > 0 ? `${h}:${m.toString().padStart(2, '0')}:${sec}` : `${m}:${sec}`;
+    if (useHours) return `${h}:${m.toString().padStart(2, '0')}:${sec}`;
+    return `${m}:${sec}`;
   };
 
   // FIX: clamp to [0, 100] — currentTime can briefly exceed duration during seek
@@ -49,6 +53,9 @@ export default function Player({
   // pointerup commits. Works identically for mouse, touch, and stylus.
   const seekTrackRef = useRef<HTMLDivElement>(null);
   const isDraggingRef = useRef(false);
+  // FIX: track dragging in state so we can add .seekDragging class to disable
+  // seekFill's transition while scrubbing — otherwise fill lags 100ms behind.
+  const [isDragging, setIsDragging] = React.useState(false);
 
   const seekFromPointer = useCallback(
     (e: React.PointerEvent<HTMLDivElement>) => {
@@ -66,6 +73,7 @@ export default function Player({
       if (e.button !== 0 && e.pointerType === 'mouse') return;
       e.currentTarget.setPointerCapture(e.pointerId);
       isDraggingRef.current = true;
+      setIsDragging(true);
       seekFromPointer(e);
     },
     [seekFromPointer]
@@ -83,6 +91,7 @@ export default function Player({
     (e: React.PointerEvent<HTMLDivElement>) => {
       if (!isDraggingRef.current) return;
       isDraggingRef.current = false;
+      setIsDragging(false);
       e.currentTarget.releasePointerCapture(e.pointerId);
     },
     []
@@ -122,7 +131,13 @@ export default function Player({
         <div className={styles.cover}>
           {coverSrc ? (
             // eslint-disable-next-line @next/next/no-img-element
-            <img src={coverSrc} alt={`Album art for ${track.title}`} className={styles.coverImg} />
+            <img
+              src={coverSrc}
+              alt={`Album art for ${track.title}`}
+              className={styles.coverImg}
+              loading="lazy"
+              decoding="async"
+            />
           ) : (
             <div className={styles.coverPlaceholder}>
               <svg viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -220,7 +235,8 @@ export default function Player({
         {/* Seek bar */}
         <div
           ref={seekTrackRef}
-          className={`${styles.seekTrack} ${isLoading || duration === 0 ? styles.seekDisabled : ''}`}
+          className={`${styles.seekTrack} ${isLoading || duration === 0 ? styles.seekDisabled : ''} ${isDragging ? styles.seekDragging : ''}`}
+          style={{ '--progress': progress } as React.CSSProperties}
           onPointerDown={onSeekPointerDown}
           onPointerMove={onSeekPointerMove}
           onPointerUp={onSeekPointerUp}
@@ -230,8 +246,8 @@ export default function Player({
           tabIndex={0}
           aria-label="Seek"
           aria-valuemin={0}
-          aria-valuemax={100}
-          aria-valuenow={Math.round(progress)}
+          aria-valuemax={Math.round(duration)}
+          aria-valuenow={Math.round(currentTime)}
           aria-valuetext={`${fmt(currentTime)} of ${fmt(duration)}`}
         >
           <div className={styles.seekFill}  style={{ width: `${progress}%` }} />
@@ -256,7 +272,12 @@ export default function Player({
             className={styles.volSlider}
             min={0} max={1} step={0.01}
             value={volume}
-            onChange={(e) => onVolume(parseFloat(e.target.value))}
+            onChange={(e) => {
+              // FIX: parseFloat returns NaN for empty string; audio.volume=NaN
+              // throws a TypeError in Firefox. Fallback to 0.
+              const v = parseFloat(e.target.value);
+              onVolume(isNaN(v) ? 0 : v);
+            }}
             aria-label="Volume"
           />
         </div>

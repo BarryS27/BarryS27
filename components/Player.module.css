@@ -257,6 +257,9 @@
   border-radius: 1px;
   margin-top: 6px;
   cursor: pointer;
+  /* FIX: without touch-action:manipulation iOS Safari adds a 300ms delay
+     before pointer events fire on custom (non-button) touch targets */
+  touch-action: manipulation;
   transition: height 0.2s;
 }
 .seekTrack:hover { height: 4px; }
@@ -280,13 +283,24 @@
   background: linear-gradient(90deg, var(--col-teal), var(--col-violet));
   border-radius: 1px;
   pointer-events: none;
+  /* FIX: transition removed during drag via .seekDragging class (added in JS).
+     Without this, the fill visually lags 100ms behind the pointer while scrubbing. */
   transition: width 0.1s linear;
+}
+
+/* Applied by JS while pointer is held down */
+.seekDragging .seekFill {
+  transition: none;
 }
 
 .seekThumb {
   position: absolute;
   top: 50%;
-  transform: translate(-50%, -50%);
+  /* FIX: clamp left so the thumb (8px, centered via translateX(-50%)) is never
+     half-clipped by .player's overflow:hidden at progress=100%. The 4px margin
+     keeps the full thumb visible at both ends of the track. */
+  left: clamp(4px, calc(var(--progress, 0) * 1%), calc(100% - 4px));
+  transform: translateY(-50%);
   width: 8px;
   height: 8px;
   border-radius: 50%;
@@ -297,9 +311,6 @@
   transition: opacity 0.2s;
 }
 .seekTrack:hover .seekThumb { opacity: 1; }
-/* FIX: keep thumb visible while actively dragging — without this, moving the
-   pointer off the track element during a drag made the thumb disappear even
-   though pointer capture kept the drag active. */
 .seekTrack:active .seekThumb { opacity: 1; }
 
 /* ── Volume ── */
@@ -328,6 +339,13 @@
   outline: none;
   cursor: pointer;
 }
+/* FIX: global :focus{outline:none} stripped focus ring from volume slider;
+   restore a visible indicator for keyboard users */
+.volSlider:focus-visible {
+  outline: 2px solid var(--col-teal);
+  outline-offset: 4px;
+  border-radius: 2px;
+}
 .volSlider::-webkit-slider-thumb {
   -webkit-appearance: none;
   width: 10px;
@@ -353,6 +371,14 @@
 }
 .volSlider::-moz-range-thumb:hover {
   background: var(--col-teal);
+}
+/* FIX: Firefox volume slider track was using the OS-default blue bar — need
+   ::-moz-range-track to match the minimal dark styling on WebKit */
+.volSlider::-moz-range-track {
+  height: 2px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 1px;
+  border: none;
 }
 
 /* ── Close button ── */
