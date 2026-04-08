@@ -80,7 +80,13 @@ export function useAudio(): UseAudioReturn {
   // ── Bootstrap audio element ────────────────────────────────────────────────
   useEffect(() => {
     const audio      = new Audio();
-    audio.crossOrigin = 'anonymous';
+    // FIX: do NOT set crossOrigin here. Setting crossOrigin='anonymous'
+    // unconditionally tells the browser to make every request in CORS mode.
+    // YouTube CDN streams deliberately omit Access-Control-Allow-Origin headers,
+    // so the browser rejects them with a CORS error and audio never plays.
+    // crossOrigin is now set per-track in loadTrack/updateStreamUrl: 'anonymous'
+    // only for local blob: URLs (needed for the Web Audio analyser) and direct
+    // audio files; left unset (null) for YouTube/external streams.
     audio.preload    = 'metadata';
     audioRef.current = audio;
 
@@ -96,7 +102,26 @@ export function useAudio(): UseAudioReturn {
 
     const on = (e: string, fn: () => void) => audio.addEventListener(e, fn);
 
-    on('timeupdate',     () => setState((p) => ({ ...p, currentTime: audio.currentTime })));
+    on('timeupdate', () => {
+      setState((p) => ({ ...p, currentTime: audio.currentTime }));
+      // FIX: update MediaSession position so the OS lock-screen / notification
+      // scrubber reflects the current playback position. Without this the
+      // scrubber stays at 0 on Android Chrome and some desktop platforms.
+      if (
+        typeof navigator !== 'undefined' &&
+        'mediaSession' in navigator &&
+        isFinite(audio.duration) &&
+        audio.duration > 0
+      ) {
+        try {
+          navigator.mediaSession.setPositionState({
+            duration:     audio.duration,
+            playbackRate: audio.playbackRate,
+            position:     audio.currentTime,
+          });
+        } catch { /* setPositionState not supported on this platform */ }
+      }
+    });
     on('durationchange', () =>
       setState((p) => ({ ...p, duration: isFinite(audio.duration) ? audio.duration : 0 }))
     );
@@ -104,6 +129,11 @@ export function useAudio(): UseAudioReturn {
       // FIX: resume the AudioContext when playback starts so the analyser runs.
       if (audioCtxRef.current?.state === 'suspended') {
         audioCtxRef.current.resume().catch(() => {});
+      }
+      // FIX: keep MediaSession.playbackState in sync — without this, OS media
+      // controls (lock screen, notification bar) show stale state on some platforms.
+      if (typeof navigator !== 'undefined' && 'mediaSession' in navigator) {
+        navigator.mediaSession.playbackState = 'playing';
       }
       setState((p) => ({ ...p, isPlaying: true, isLoading: false }));
     });
@@ -114,9 +144,17 @@ export function useAudio(): UseAudioReturn {
       if (audioCtxRef.current?.state === 'running') {
         audioCtxRef.current.suspend().catch(() => {});
       }
+      if (typeof navigator !== 'undefined' && 'mediaSession' in navigator) {
+        navigator.mediaSession.playbackState = 'paused';
+      }
       setState((p) => ({ ...p, isPlaying: false }));
     });
-    on('ended',   () => setState((p) => ({ ...p, isPlaying: false, trackEnded: true })));
+    on('ended', () => {
+      if (typeof navigator !== 'undefined' && 'mediaSession' in navigator) {
+        navigator.mediaSession.playbackState = 'none';
+      }
+      setState((p) => ({ ...p, isPlaying: false, trackEnded: true }));
+    });
     on('waiting', () => setState((p) => ({ ...p, isLoading: true })));
     on('canplay', () => setState((p) => ({ ...p, isLoading: false })));
     on('error',   () => {
@@ -247,10 +285,22 @@ export function useAudio(): UseAudioReturn {
       audio.src = '';
       audio.load();
 
-      // Small flush so the browser fully releases the previous source node
-      await new Promise<void>((resolve) => setTimeout(resolve, 50));
+      // FIX: replaced the arbitrary 50ms setTimeout with an 'emptied' event wait.
+      // 'emptied' fires when the browser has fully released the previous resource
+      // (after src='' + load()). The old 50ms was a guess that fails on slow
+      // devices. We cap at 300ms to avoid hanging if the event never fires
+      // (some browsers skip it when src was already empty).
+      await new Promise<void>((resolve) => {
+        const onEmptied = () => { audio.removeEventListener('emptied', onEmptied); resolve(); };
+        audio.addEventListener('emptied', onEmptied);
+        setTimeout(resolve, 300); // safety cap
+      });
 
-      // Arm before assigning the real src so genuine errors are reported
+      // FIX: set crossOrigin per-track. 'anonymous' is needed for blob: URLs so
+      // the Web Audio API can connect a MediaElementSource (same-origin policy
+      // for AudioContext). For YouTube/external streams, crossOrigin must be null
+      // — those CDNs do not send CORS headers and the browser would block them.
+      audio.crossOrigin = newTrack.source === 'local' ? 'anonymous' : null;
       (audio as HTMLAudioElement & { _setSrcReal?: (v: boolean) => void })._setSrcReal?.(true);
       audio.src    = newTrack.url;
       audio.volume = volumeRef.current; // FIX: was state.volume (stale closure)
@@ -288,7 +338,8 @@ export function useAudio(): UseAudioReturn {
       setTrack((prev) => (prev ? { ...prev, url: freshUrl } : null));
 
       audio.pause();
-      // Arm immediately — updateStreamUrl always sets a real src
+      // Arm immediately — updateStreamUrl always sets a real src.
+      // Keep existing crossOrigin setting (the track source hasn't changed).
       (audio as HTMLAudioElement & { _setSrcReal?: (v: boolean) => void })._setSrcReal?.(true);
       audio.src    = freshUrl;
       audio.volume = volumeRef.current;
@@ -351,6 +402,10 @@ export function useAudio(): UseAudioReturn {
       // which would set state.error on the now-cleared player if srcIsReal=true.
       (audio as HTMLAudioElement & { _setSrcReal?: (v: boolean) => void })._setSrcReal?.(false);
       audio.src = '';
+      // FIX: call audio.load() after clearing src — without it, Firefox and
+      // Safari keep the previous resource buffered in memory and may fire
+      // stale timeupdate or ended events for the old track.
+      audio.load();
     }
     setTrack(null);
     setState((p) => ({
