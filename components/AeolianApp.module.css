@@ -1,13 +1,8 @@
-/* ============================================================
-   AeolianApp Module
-   ============================================================ */
+/* AeolianApp Module */
 
 .root {
   position: relative;
   width: 100vw;
-  /* FIX: 100vh on iOS Safari includes the hidden toolbar area, pushing content
-     off-screen. Use 100dvh (dynamic viewport height) with a 100vh fallback for
-     browsers that don't support dvh yet (Chrome < 108, Firefox < 109). */
   height: 100vh;
   height: 100dvh;
   display: flex;
@@ -16,12 +11,13 @@
   justify-content: center;
   overflow: hidden;
   cursor: default;
+  font-family: var(--font-ui);
 }
 
-/* ── Drag-over state ── */
-.root.dragOver { outline: none; }
+.root[data-drag-over] { outline: none; }
 
-.dragOverlay {
+.root[data-drag-over]::before {
+  content: "Drop to play";
   position: fixed;
   inset: 0;
   z-index: 100;
@@ -32,9 +28,6 @@
   justify-content: center;
   pointer-events: none;
   animation: fadeIn 0.15s ease both;
-}
-
-.dragLabel {
   font-family: var(--font-display);
   font-size: 2.5rem;
   font-weight: 300;
@@ -44,7 +37,6 @@
   text-transform: uppercase;
 }
 
-/* ── Stage ── */
 .stage {
   position: relative;
   z-index: 10;
@@ -56,7 +48,6 @@
   padding: 0 20px;
 }
 
-/* ── Logotype ── */
 .header { margin-bottom: 12px; }
 
 .logo {
@@ -71,7 +62,6 @@
   text-align: center;
 }
 
-/* ── Aura canvas wrap ── */
 .auraWrap {
   width: clamp(260px, 50vmin, 420px);
   height: clamp(260px, 50vmin, 420px);
@@ -79,7 +69,6 @@
   flex-shrink: 0;
 }
 
-/* ── Idle prompt ── */
 .idlePrompt {
   display: flex;
   flex-direction: column;
@@ -120,24 +109,27 @@
   box-shadow: 0 0 28px rgba(15, 248, 224, 0.2);
   transform: scale(1.08) rotate(90deg);
 }
-/* FIX: keyboard focus was invisible */
 .plusBtn:focus-visible {
   outline: 2px solid var(--col-teal);
   outline-offset: 3px;
 }
-.plusBtn svg { width: 22px; height: 22px; }
+.plusBtn svg {
+  width: 22px;
+  height: 22px;
+}
 
 .hint {
-  font-family: var(--font-ui);
   font-size: 0.78rem;
   letter-spacing: 0.08em;
   color: var(--text-ghost);
   user-select: none;
 }
 
-.sep { margin: 0 6px; opacity: 0.5; }
+.sep {
+  margin: 0 6px;
+  opacity: 0.5;
+}
 
-/* ── Recent tracks history ── */
 .history {
   margin-top: 4px;
   width: 100%;
@@ -146,7 +138,6 @@
 }
 
 .historyLabel {
-  font-family: var(--font-ui);
   font-size: 0.65rem;
   letter-spacing: 0.1em;
   text-transform: uppercase;
@@ -159,8 +150,6 @@
   display: flex;
   flex-direction: column;
   gap: 4px;
-  /* FIX: without max-height, 6 history items on a short screen would push the
-     idle prompt's aura canvas and header off-screen with no way to scroll. */
   max-height: 30vh;
   overflow-y: auto;
 }
@@ -182,14 +171,12 @@
   background: rgba(255, 255, 255, 0.07);
   border-color: rgba(255, 255, 255, 0.14);
 }
-/* FIX: keyboard focus was invisible on history items */
 .historyItem:focus-visible {
   outline: 2px solid var(--col-teal);
   outline-offset: -2px;
 }
 
 .historyTitle {
-  font-family: var(--font-ui);
   font-size: 0.78rem;
   color: var(--text-secondary);
   white-space: nowrap;
@@ -201,7 +188,6 @@
 
 .historyBadge {
   flex-shrink: 0;
-  font-family: var(--font-ui);
   font-size: 0.6rem;
   font-weight: 500;
   letter-spacing: 0.06em;
@@ -210,7 +196,6 @@
   border-radius: 100px;
   border: 1px solid transparent;
 }
-
 .badge_youtube {
   color: #f87171;
   background: rgba(248, 113, 113, 0.1);
@@ -222,7 +207,6 @@
   border-color: rgba(15, 248, 224, 0.25);
 }
 
-/* ── Resolving status ── */
 .status {
   display: flex;
   align-items: center;
@@ -243,13 +227,11 @@
 @keyframes spin { to { transform: rotate(360deg); } }
 
 .status span {
-  font-family: var(--font-ui);
   font-size: 0.78rem;
   color: var(--text-secondary);
   letter-spacing: 0.06em;
 }
 
-/* ── Error box ── */
 .errorBox {
   display: flex;
   flex-direction: column;
@@ -261,10 +243,14 @@
   animation: fadeIn 0.35s var(--ease-out-expo) both;
 }
 
-.errorIcon { width: 28px; height: 28px; color: var(--col-rose); opacity: 0.8; }
+.errorIcon {
+  width: 28px;
+  height: 28px;
+  color: var(--col-rose);
+  opacity: 0.8;
+}
 
 .errorText {
-  font-family: var(--font-ui);
   font-size: 0.8rem;
   color: var(--text-secondary);
   line-height: 1.5;
@@ -272,7 +258,6 @@
 }
 
 .retryBtn {
-  font-family: var(--font-ui);
   font-size: 0.73rem;
   letter-spacing: 0.1em;
   text-transform: uppercase;
@@ -288,22 +273,18 @@
   background: rgba(15, 248, 224, 0.2);
   box-shadow: 0 0 16px rgba(15, 248, 224, 0.2);
 }
-/* FIX: keyboard focus was invisible on retry button */
 .retryBtn:focus-visible {
   outline: 2px solid var(--col-teal);
   outline-offset: 3px;
 }
 
-/* ── Queue drawer ── */
 .queueBackdrop {
   position: fixed;
   inset: 0;
   z-index: 40;
-  /* FIX: solid fallback for browsers without backdrop-filter support */
   background: rgba(5, 8, 16, 0.7);
   animation: fadeIn 0.2s ease both;
 }
-
 @supports (backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px)) {
   .queueBackdrop {
     background: rgba(5, 8, 16, 0.4);
@@ -320,7 +301,6 @@
   width: 100%;
   max-width: 460px;
   max-height: 45vh;
-  /* FIX: solid fallback for browsers without backdrop-filter */
   background: rgba(8, 10, 20, 0.99);
   border: 1px solid var(--glass-border);
   border-bottom: none;
@@ -330,7 +310,6 @@
   flex-direction: column;
   animation: slideUp 0.3s var(--ease-out-expo) both;
 }
-
 @supports (backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px)) {
   .queueDrawer {
     background: rgba(8, 10, 20, 0.97);
@@ -349,16 +328,13 @@
 }
 
 .queueDrawerTitle {
-  font-family: var(--font-ui);
   font-size: 0.78rem;
   font-weight: 500;
   letter-spacing: 0.08em;
   text-transform: uppercase;
   color: var(--text-primary);
 }
-
 .queueDrawerCount {
-  font-family: var(--font-ui);
   font-size: 0.7rem;
   color: var(--text-ghost);
 }
@@ -378,12 +354,14 @@
   transition: color 0.2s;
 }
 .queueDrawerClose:hover { color: var(--text-primary); }
-/* FIX: keyboard focus was invisible on queue drawer close button */
 .queueDrawerClose:focus-visible {
   outline: 2px solid var(--col-teal);
   outline-offset: 2px;
 }
-.queueDrawerClose svg   { width: 10px; height: 10px; }
+.queueDrawerClose svg {
+  width: 10px;
+  height: 10px;
+}
 
 .queueList {
   overflow-y: auto;
@@ -404,19 +382,15 @@
   transition: background 0.15s;
 }
 .queueItem:hover { background: rgba(255, 255, 255, 0.04); }
-/* FIX: keyboard focus was invisible on queue track buttons */
 .queueItem:focus-visible {
   outline: 2px solid var(--col-teal);
   outline-offset: -2px;
 }
 
-.queueItemActive {
-  background: rgba(15, 248, 224, 0.06);
-}
+.queueItemActive { background: rgba(15, 248, 224, 0.06); }
 .queueItemActive:hover { background: rgba(15, 248, 224, 0.1); }
 
 .queueItemNum {
-  font-family: var(--font-ui);
   font-size: 0.7rem;
   font-variant-numeric: tabular-nums;
   color: var(--text-ghost);
@@ -434,18 +408,15 @@
 }
 
 .queueItemTitle {
-  font-family: var(--font-ui);
   font-size: 0.8rem;
   color: var(--text-secondary);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
-
 .queueItemActive .queueItemTitle { color: var(--col-teal); }
 
 .queueItemArtist {
-  font-family: var(--font-ui);
   font-size: 0.68rem;
   color: var(--text-ghost);
   white-space: nowrap;
@@ -459,9 +430,11 @@
   display: flex;
   align-items: center;
 }
-.queueItemNowPlaying svg { width: 12px; height: 12px; }
+.queueItemNowPlaying svg {
+  width: 12px;
+  height: 12px;
+}
 
-/* ── Footer ── */
 .footer {
   position: fixed;
   bottom: 0;
@@ -472,14 +445,12 @@
   text-align: center;
 }
 .footer p {
-  font-family: var(--font-ui);
   font-size: 0.65rem;
   color: var(--text-ghost);
   letter-spacing: 0.04em;
   line-height: 1.6;
 }
 
-/* ── Hidden file input ── */
 .fileInput {
   position: absolute;
   width: 1px;
@@ -488,7 +459,6 @@
   pointer-events: none;
 }
 
-/* ── Responsive ── */
 @media (max-height: 600px) {
   .auraWrap { width: 220px; height: 220px; }
   .logo { font-size: 1rem; }

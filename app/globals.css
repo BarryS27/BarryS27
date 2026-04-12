@@ -1,7 +1,3 @@
-/* ============================================================
-   AEOLIAN — Global Styles
-   ============================================================ */
-
 *, *::before, *::after {
   box-sizing: border-box;
   margin: 0;
@@ -9,40 +5,30 @@
 }
 
 :root {
-  /* Palette */
-  --col-bg:          #050810;
-  --col-teal:        #0ff8e0;
-  --col-teal-dim:    rgba(15, 248, 224, 0.12);
-  --col-violet:      #7c3aed;
-  --col-violet-dim:  rgba(124, 58, 237, 0.15);
-  --col-rose:        #f472b6;
-  --col-rose-dim:    rgba(244, 114, 182, 0.12);
-  --col-sky:         #38bdf8;
-  --col-sky-dim:     rgba(56, 189, 248, 0.1);
+  --col-bg:         #050810;
+  --col-teal:       #0ff8e0;
+  --col-teal-dim:   rgba(15, 248, 224, 0.12);
+  --col-violet:     #7c3aed;
+  --col-rose:       #f472b6;
 
-  /* Glass */
-  --glass-bg:        rgba(255, 255, 255, 0.04);
-  --glass-border:    rgba(255, 255, 255, 0.08);
-  --glass-blur:      24px;
-  --glass-shadow:    0 8px 60px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255,255,255,0.06);
+  --glass-bg:       rgba(255, 255, 255, 0.04);
+  --glass-border:   rgba(255, 255, 255, 0.08);
+  --glass-blur:     24px;
+  --glass-shadow:   0 8px 60px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255,255,255,0.06);
 
-  /* Text */
-  --text-primary:    rgba(255, 255, 255, 0.92);
-  --text-secondary:  rgba(255, 255, 255, 0.45);
-  --text-ghost:      rgba(255, 255, 255, 0.18);
+  --text-primary:   rgba(255, 255, 255, 0.92);
+  --text-secondary: rgba(255, 255, 255, 0.45);
+  --text-ghost:     rgba(255, 255, 255, 0.18);
 
-  /* Typography */
-  --font-display:    var(--font-cormorant), 'Georgia', serif;
-  --font-ui:         var(--font-syne), system-ui, sans-serif;
+  --font-display:   var(--font-cormorant), 'Georgia', serif;
+  --font-ui:        var(--font-syne), system-ui, sans-serif;
 
-  /* Layout */
-  --radius-lg:       20px;
-  --radius-md:       12px;
-  --radius-sm:       8px;
+  --radius-lg:      20px;
+  --radius-md:      12px;
+  --radius-sm:      8px;
 
-  /* Motion */
-  --ease-out-expo:   cubic-bezier(0.16, 1, 0.3, 1);
-  --ease-in-out:     cubic-bezier(0.4, 0, 0.2, 1);
+  --ease-out-expo:  cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-in-out:    cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 html, body {
@@ -56,22 +42,15 @@ html, body {
   -moz-osx-font-smoothing: grayscale;
 }
 
-/* ── Scrollbar ── */
 ::-webkit-scrollbar { width: 4px; }
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: var(--glass-border); border-radius: 2px; }
 
-/* ── Selection ── */
 ::selection { background: rgba(15, 248, 224, 0.25); }
 
-/* ── Focus ring reset ── */
-/* FIX: Default browser :focus outlines (blue box, dotted line) are jarring on a
-   dark glass UI. Suppress the default and let each component define its own
-   :focus-visible style using --col-teal for consistency. */
 :focus { outline: none; }
 :focus-visible { outline: 2px solid var(--col-teal); outline-offset: 2px; }
 
-/* ── Mesh Background ── */
 .mesh-bg {
   position: fixed;
   inset: 0;
@@ -97,7 +76,6 @@ html, body {
   left: -5%;
   animation: drift-1 28s ease-in-out infinite alternate;
 }
-
 .mesh-orb-2 {
   width: 500px;
   height: 500px;
@@ -106,7 +84,6 @@ html, body {
   right: 5%;
   animation: drift-2 22s ease-in-out infinite alternate;
 }
-
 .mesh-orb-3 {
   width: 400px;
   height: 400px;
@@ -115,7 +92,6 @@ html, body {
   right: -5%;
   animation: drift-3 32s ease-in-out infinite alternate;
 }
-
 .mesh-orb-4 {
   width: 350px;
   height: 350px;
@@ -142,7 +118,6 @@ html, body {
   to   { transform: translate(50px, -60px) scale(1.2); }
 }
 
-/* ── Grain Overlay ── */
 .mesh-grain {
   position: fixed;
   inset: 0;
@@ -153,15 +128,8 @@ html, body {
   background-size: 200px 200px;
 }
 
-/* ── Motion accessibility ── */
-/* FIX: Users who set "Reduce motion" in their OS got the full mesh drift animations,
-   canvas animation loop, and all CSS transitions regardless. This media query
-   disables non-essential animations for those users. The canvas draw loop in
-   Aura.tsx still runs (it uses requestAnimationFrame) — that is handled separately
-   by the isPlaying prop which already idles to a slow breathe. */
 @media (prefers-reduced-motion: reduce) {
   .mesh-orb { animation: none; }
-  .mesh-grain { animation: none; }
   *, *::before, *::after {
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
