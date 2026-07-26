@@ -1,0 +1,21 @@
+{
+    "name": "Aeolian: Pure music player",
+    "private": true,
+    "version": "0.2.0",
+    "description": "A minimalist, Tidal-style music player, focused on music playing, no other features.",
+    "author": "asong56 <238927804+asong56@users.noreply.github.com>",
+    "license": "MIT",
+    "type": "module",
+    "scripts": {
+        "dev": "vite",
+        "build": "vite build",
+        "preview": "vite preview"
+    },
+    "devDependencies": {
+        "vite": "^5.0.0",
+        "vite-plugin-minify": "^1.5.0",
+        "vite-plugin-pwa": "^0.20.0",
+        "vite-plugin-singlefile": "^2.0.0",
+        "terser": "^5.0.0"
+    }
+}
