@@ -287,7 +287,7 @@ body.drag-active .drop-inner{
 #actions.show{opacity:1;visibility:visible}
 .action-btn{
   border:none;background:none;cursor:pointer;outline:none;
-  display:flex;align-items:center;gap:8px;padding:8px 14px;border-radius:30px;
+  display:flex;align-items:center;justify-content:center;gap:6px;padding:10px;border-radius:30px;
   color:rgba(255,255,255,.28);font-family:var(--f);
   font-size:11px;font-weight:500;letter-spacing:1px;text-transform:uppercase;
   transition:color .2s,background .2s;-webkit-tap-highlight-color:transparent;
@@ -432,7 +432,6 @@ body.drag-active .drop-inner{
 <div class="bg" id="bg-b"></div>
 
 <input type="file" id="file-in" accept="audio/*" multiple style="display:none">
-<input type="file" id="dir-in" webkitdirectory multiple style="display:none">
 
 <div id="drop-zone">
   <div class="drop-ring" id="drop-ring" role="button" tabindex="0" aria-label="Choose audio files">
@@ -540,23 +539,21 @@ body.drag-active .drop-inner{
 
 <div id="actions">
   <button class="action-btn" id="open-btn" aria-label="Open files">
-    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor"
          stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
       <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>
     </svg>
-    Open
   </button>
   <button class="action-btn" id="meta-btn" aria-label="Track info">
-    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor"
          stroke-width="1.8" stroke-linecap="round">
       <circle cx="12" cy="12" r="10"/>
       <line x1="12" y1="8" x2="12" y2="8" stroke-width="2.5"/>
       <line x1="12" y1="12" x2="12" y2="16"/>
     </svg>
-    Info
   </button>
   <button class="action-btn" id="pl-btn" aria-label="Playlist">
-    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor"
          stroke-width="1.8" stroke-linecap="round">
       <line x1="8" y1="6" x2="21" y2="6"/>
       <line x1="8" y1="12" x2="21" y2="12"/>
@@ -565,7 +562,7 @@ body.drag-active .drop-inner{
       <circle cx="3" cy="12" r="1" fill="currentColor" stroke="none"/>
       <circle cx="3" cy="18" r="1" fill="currentColor" stroke="none"/>
     </svg>
-    Tracks <span id="pl-count">0</span>
+    <span id="pl-count">0</span>
   </button>
 </div>
 
@@ -619,17 +616,17 @@ const fmt = s => {
 };
 
 // Detect image type from magic bytes so APIC MIME tag errors don't break art
-function imgMime(data) {
-  if (!data || data.length < 4) return 'image/jpeg';
+function imgMime(data, fallbackMime) {
+  if (!data || data.length < 4) return fallbackMime || 'image/jpeg';
   if (data[0]===0xff && data[1]===0xd8) return 'image/jpeg';
   if (data[0]===0x89 && data[1]===0x50 && data[2]===0x4e && data[3]===0x47) return 'image/png';
   if (data[0]===0x47 && data[1]===0x49 && data[2]===0x46) return 'image/gif';
   if (data[0]===0x52 && data[1]===0x49 && data[4]===0x57 && data[5]===0x45) return 'image/webp';
-  return mime || 'image/jpeg';
+  return fallbackMime || 'image/jpeg';
 }
 
 const blobURL = (data, mime) => {
-  try { return URL.createObjectURL(new Blob([data], {type: imgMime(data)})); } catch { return null; }
+  try { return URL.createObjectURL(new Blob([data], {type: imgMime(data, mime)})); } catch { return null; }
 };
 
 // ═══════════════════════════════════════════════════════
@@ -1037,7 +1034,6 @@ const D = {
   dropRing:document.getElementById('drop-ring'),
   dropLbl: document.getElementById('drop-lbl'),
   fileIn:  document.getElementById('file-in'),
-  dirIn:   document.getElementById('dir-in'),
   app:     document.getElementById('app'),
   artCard: document.getElementById('art-card'),
   artImg:  document.getElementById('art-img'),
@@ -1406,7 +1402,6 @@ D.plScrl.addEventListener('click',e=>{
 function buildMeta(t) {
   const title = t.title || stripExt(t.file.name);
   const fields = [
-    ['Title',        title],
     ['Artist',       t.artist],
     ['Album',        t.album],
     ['Album Artist', t.albumArtist],
@@ -1477,7 +1472,6 @@ async function* walkEntry(entry) {
 async function loadFiles(fileList) {
   const all = [...fileList];
   // collect .lrc sidecars first (fast pass over non-audio)
-  lrcMap = {};
   for (const f of all) {
     if (f.name.toLowerCase().endsWith('.lrc')) {
       const text = await f.text().catch(()=>'');
@@ -1488,11 +1482,9 @@ async function loadFiles(fileList) {
   const audioFiles = all.filter(f=>f.type.startsWith('audio/')||AUDIO_EXT.test(f.name));
   if (!audioFiles.length) return;
 
-  // release old object URLs
-  S.tracks.forEach(t=>{ URL.revokeObjectURL(t.url); if(t.art?.startsWith('blob:')) URL.revokeObjectURL(t.art); });
-  S.tracks = [];
+  const wasEmpty = S.tracks.length === 0;
 
-  // sort by folder path then name
+  // sort new batch by folder path then name before appending
   audioFiles.sort((a,b)=>(a.webkitRelativePath||a.name).localeCompare(b.webkitRelativePath||b.name));
 
   let firstLoaded = false;
@@ -1528,7 +1520,7 @@ async function loadFiles(fileList) {
 
     S.tracks.push(t);
 
-    if (!firstLoaded) {
+    if (wasEmpty && !firstLoaded) {
       firstLoaded=true;
       await metaPromise; // wait for first track meta before playing
       buildQueue(0);
@@ -1552,8 +1544,9 @@ async function loadFiles(fileList) {
     }
   }
 
-  // rebuild queue with full track count after all files scanned
-  buildQueue(S.cur);
+  // rebuild queue with full track count after all files scanned, keep current track playing
+  buildQueue(wasEmpty ? 0 : S.cur);
+  buildPlaylist();
   D.plCount.textContent = S.tracks.length;
 }
 
@@ -1577,25 +1570,10 @@ document.addEventListener('drop', async e=>{
 });
 
 // ═══════════════════════════════════════════════════════
-//  FILE / DIR PICKER  (click to open)
+//  FILE PICKER  (click to open)
 // ═══════════════════════════════════════════════════════
 function openPicker() {
-  // try directory picker first on supporting browsers
-  if ('showDirectoryPicker' in window) {
-    window.showDirectoryPicker({mode:'read'}).then(async handle=>{
-      const files=[];
-      async function collect(h) {
-        for await (const [,e] of h) {
-          if (e.kind==='file') { const f=await e.getFile(); files.push(f); }
-          else await collect(e);
-        }
-      }
-      await collect(handle);
-      loadFiles(files);
-    }).catch(()=>D.fileIn.click()); // fallback if user cancels / not supported
-  } else {
-    D.fileIn.click();
-  }
+  D.fileIn.click();
 }
 
 D.dropRing.addEventListener('click',  openPicker);
